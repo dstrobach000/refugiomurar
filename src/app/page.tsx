@@ -1,63 +1,268 @@
+"use client";
+
+import { Canvas, useFrame, useLoader } from "@react-three/fiber";
 import Image from "next/image";
+import { Suspense, useMemo, useRef, useState } from "react";
+import { MTLLoader } from "three/examples/jsm/loaders/MTLLoader.js";
+import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader.js";
+import { Box3, Vector3 } from "three";
+
+const cactusMtl = "/Refugio_Murar/3D/Cactus/Refugio_Murar.mtl";
+const cactusObj = "/Refugio_Murar/3D/Cactus/Refugio_Murar.obj";
+const logoSrc = "/Refugio_Murar/Logo/murar_oranzova.png";
+const audioSrc = "/Refugio_Murar/audio/field-recording.mp3";
+
+function CactusModel({
+  offsetX,
+  offsetY,
+  scale,
+}: {
+  offsetX: number;
+  offsetY: number;
+  scale: number;
+}) {
+  const materials = useLoader(MTLLoader, cactusMtl);
+  const object = useLoader(OBJLoader, cactusObj, (loader) => {
+    materials.preload();
+    loader.setMaterials(materials);
+  });
+  const modelRef = useRef<THREE.Group | null>(null);
+
+  useFrame((state, delta) => {
+    if (modelRef.current) {
+      modelRef.current.rotation.y += delta * 0.12;
+    }
+  });
+
+  const centeredObject = useMemo(() => {
+    const clone = object.clone(true);
+    const box = new Box3().setFromObject(clone);
+    const center = new Vector3();
+    box.getCenter(center);
+    clone.position.sub(center);
+    return clone;
+  }, [object]);
+
+  return (
+    <primitive
+      ref={modelRef}
+      object={centeredObject}
+      scale={scale}
+      position={[offsetX, offsetY, 0]}
+    />
+  );
+}
 
 export default function Home() {
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
+  const [isLooping, setIsLooping] = useState(true);
+  const fileName = audioSrc.split("/").pop() ?? "audio";
+
+  const togglePlay = async () => {
+    const audio = audioRef.current;
+    if (!audio) {
+      return;
+    }
+
+    if (audio.paused) {
+      try {
+        await audio.play();
+        setIsPlaying(true);
+      } catch {
+        setIsPlaying(false);
+      }
+    } else {
+      audio.pause();
+      setIsPlaying(false);
+    }
+  };
+
+  const toggleMute = () => {
+    const audio = audioRef.current;
+    if (!audio) {
+      return;
+    }
+    audio.muted = !audio.muted;
+    setIsMuted(audio.muted);
+  };
+
+  const toggleLoop = () => {
+    const audio = audioRef.current;
+    if (!audio) {
+      return;
+    }
+    audio.loop = !audio.loop;
+    setIsLooping(audio.loop);
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+    <div className="flex min-h-screen items-center justify-center bg-[#d2d2d2] font-sans text-[#d97831]">
+      <main className="relative flex min-h-screen w-full items-center justify-center overflow-hidden px-4 py-6 text-center">
+        <audio ref={audioRef} src={audioSrc} loop={isLooping} muted={isMuted} />
+        <div className="absolute top-5 z-20 flex w-full items-center justify-center gap-4 px-4 text-[#d97831]">
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              aria-label={isPlaying ? "Pause" : "Play"}
+              onClick={togglePlay}
+              className="flex h-10 w-10 items-center justify-center rounded-full border border-[#d97831] text-[#d97831] transition-colors hover:bg-[#d97831]/10"
             >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+              {isPlaying ? (
+                <svg
+                  viewBox="0 0 24 24"
+                  className="h-4 w-4"
+                  aria-hidden="true"
+                >
+                  <rect x="6" y="5" width="4" height="14" fill="currentColor" />
+                  <rect
+                    x="14"
+                    y="5"
+                    width="4"
+                    height="14"
+                    fill="currentColor"
+                  />
+                </svg>
+              ) : (
+                <svg
+                  viewBox="0 0 24 24"
+                  className="h-4 w-4"
+                  aria-hidden="true"
+                >
+                  <polygon points="6,4 20,12 6,20" fill="currentColor" />
+                </svg>
+              )}
+            </button>
+            <button
+              type="button"
+              aria-label={isMuted ? "Unmute" : "Mute"}
+              onClick={toggleMute}
+              className="flex h-10 w-10 items-center justify-center rounded-full border border-[#d97831] text-[#d97831] transition-colors hover:bg-[#d97831]/10"
             >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+              {isMuted ? (
+                <svg
+                  viewBox="0 0 24 24"
+                  className="h-4 w-4"
+                  aria-hidden="true"
+                >
+                  <polygon
+                    points="4,9 8,9 13,5 13,19 8,15 4,15"
+                    fill="currentColor"
+                  />
+                  <line
+                    x1="16"
+                    y1="8"
+                    x2="21"
+                    y2="13"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                  />
+                  <line
+                    x1="21"
+                    y1="8"
+                    x2="16"
+                    y2="13"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                  />
+                </svg>
+              ) : (
+                <svg
+                  viewBox="0 0 24 24"
+                  className="h-4 w-4"
+                  aria-hidden="true"
+                >
+                  <polygon
+                    points="4,9 8,9 13,5 13,19 8,15 4,15"
+                    fill="currentColor"
+                  />
+                  <path
+                    d="M16 9c1.5 1.2 1.5 4.8 0 6"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                  />
+                </svg>
+              )}
+            </button>
+            <button
+              type="button"
+              aria-label={isLooping ? "Disable loop" : "Enable loop"}
+              onClick={toggleLoop}
+              className="flex h-10 w-10 items-center justify-center rounded-full border border-[#d97831] text-[#d97831] transition-colors hover:bg-[#d97831]/10"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                className="h-4 w-4"
+                aria-hidden="true"
+              >
+                <path
+                  d="M7 7h8a3 3 0 0 1 0 6h-2"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                />
+                <polyline
+                  points="11,10 13,13 10,13"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                <path
+                  d="M17 17H9a3 3 0 0 1 0-6h2"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                />
+                <polyline
+                  points="13,14 11,11 14,11"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </button>
+          </div>
+          <span className="text-sm tracking-wide text-[#d97831]/80">
+            {fileName}
+          </span>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
+        <div className="relative flex h-[92vh] w-full items-center justify-center">
+          <div className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center">
             <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
+              src={logoSrc}
+              alt="Refugio Murar"
+              width={720}
+              height={720}
+              priority
+              className="h-auto w-[720px] sm:w-[1120px] lg:w-[1640px] animate-spin-slow"
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+          </div>
+          <Canvas camera={{ position: [0, 0, 7], fov: 30 }} className="relative z-10">
+            <ambientLight intensity={0.6} />
+            <directionalLight position={[4, 6, 4]} intensity={0.9} />
+            <Suspense fallback={null}>
+              <CactusModel offsetX={0} offsetY={-2} scale={4.8} />
+            </Suspense>
+          </Canvas>
+          <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center">
+            <span
+              className="text-3xl font-normal text-[#d97831] sm:text-4xl lg:text-5xl"
+              style={{ fontFamily: "Helvetica, Arial, sans-serif" }}
+            >
+              Refugio Murar
+            </span>
+          </div>
         </div>
       </main>
     </div>
