@@ -5,7 +5,7 @@ import Image from "next/image";
 import { Suspense, useMemo, useRef, useState } from "react";
 import { MTLLoader } from "three/examples/jsm/loaders/MTLLoader.js";
 import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader.js";
-import { Box3, Vector3 } from "three";
+import { Box3, Vector3, type Group } from "three";
 
 const cactusMtl = "/Refugio_Murar/3D/Cactus/Refugio_Murar.mtl";
 const cactusObj = "/Refugio_Murar/3D/Cactus/Refugio_Murar.obj";
@@ -26,7 +26,7 @@ function CactusModel({
     materials.preload();
     loader.setMaterials(materials);
   });
-  const modelRef = useRef<THREE.Group | null>(null);
+  const modelRef = useRef<Group | null>(null);
 
   useFrame((state, delta) => {
     if (modelRef.current) {
