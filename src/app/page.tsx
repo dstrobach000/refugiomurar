@@ -1,82 +1,110 @@
 "use client";
 
-import { Canvas, useFrame, useLoader } from "@react-three/fiber";
-import Image from "next/image";
-import { Suspense, useMemo, useRef, useState } from "react";
-import { MTLLoader } from "three/examples/jsm/loaders/MTLLoader.js";
-import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader.js";
+/* eslint-disable @next/next/no-img-element */
+
+import { Canvas, useFrame } from "@react-three/fiber";
+import { useGLTF } from "@react-three/drei";
+import { Suspense, useMemo, useRef, useState, useEffect } from "react";
 import { Box3, Vector3, type Group } from "three";
+const cactusGlb = "/Refugio_Murar/3D/Cactus/AnotherCactus.glb";
+const logoSrc = "/Refugio_Murar/Logo/murar_logo_hneda.png";
+const audioSources = ["/Refugio_Murar/Sound/260130_133313_LABOR.mp3"];
 
-const cactusMtl = "/Refugio_Murar/3D/Cactus/Refugio_Murar.mtl";
-const cactusObj = "/Refugio_Murar/3D/Cactus/Refugio_Murar.obj";
-const logoSrc = "/Refugio_Murar/Logo/murar_oranzova.png";
-const audioSrc = "/Refugio_Murar/audio/field-recording.mp3";
+useGLTF.preload(cactusGlb);
 
-function CactusModel({
-  offsetX,
-  offsetY,
-  scale,
-}: {
-  offsetX: number;
-  offsetY: number;
-  scale: number;
-}) {
-  const materials = useLoader(MTLLoader, cactusMtl);
-  const object = useLoader(OBJLoader, cactusObj, (loader) => {
-    materials.preload();
-    loader.setMaterials(materials);
-  });
+const formatDatePart = (datePart: string) => {
+  if (datePart.length !== 6) {
+    return "unknown date";
+  }
+  const year = `20${datePart.slice(0, 2)}`;
+  const month = datePart.slice(2, 4);
+  const day = datePart.slice(4, 6);
+  return `${day}. ${month}. ${year}`;
+};
+
+const formatTimePart = (timePart: string) => {
+  if (timePart.length !== 6) {
+    return "00:00:00";
+  }
+  const hours = timePart.slice(0, 2);
+  const minutes = timePart.slice(2, 4);
+  const seconds = timePart.slice(4, 6);
+  return `${hours}:${minutes}:${seconds}`;
+};
+
+const formatListeningLabel = (fileName: string) => {
+  const baseName = fileName.replace(/\.[^/.]+$/, "");
+  const [datePart, timePart, ...rest] = baseName.split("_");
+  const title = rest.join("_").toLowerCase() || "audio";
+  return `You're listening to ${title} recorded on ${formatDatePart(
+    datePart ?? "",
+  )} at ${formatTimePart(timePart ?? "")}`;
+};
+
+function CactusModel({ scale }: { scale: number }) {
+  const gltf = useGLTF(cactusGlb);
   const modelRef = useRef<Group | null>(null);
 
-  useFrame((state, delta) => {
+  useFrame((_state, delta) => {
     if (modelRef.current) {
       modelRef.current.rotation.y += delta * 0.12;
     }
   });
 
   const centeredObject = useMemo(() => {
-    const clone = object.clone(true);
+    const clone = gltf.scene.clone(true);
     const box = new Box3().setFromObject(clone);
     const center = new Vector3();
     box.getCenter(center);
     clone.position.sub(center);
     return clone;
-  }, [object]);
+  }, [gltf.scene]);
 
   return (
     <primitive
       ref={modelRef}
       object={centeredObject}
       scale={scale}
-      position={[offsetX, offsetY, 0]}
+      position={[0, 0, 0]}
     />
   );
 }
 
 export default function Home() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [isMuted, setIsMuted] = useState(false);
-  const [isLooping, setIsLooping] = useState(true);
-  const fileName = audioSrc.split("/").pop() ?? "audio";
+  const [currentTrack, setCurrentTrack] = useState(() =>
+    audioSources.length > 1
+      ? Math.floor(Math.random() * audioSources.length)
+      : 0,
+  );
+  const [isMuted, setIsMuted] = useState(true);
+  const [currentTime, setCurrentTime] = useState(0);
+  const currentFileName =
+    audioSources[currentTrack]?.split("/").pop() ?? "audio";
+  const listeningLabel = formatListeningLabel(currentFileName);
 
-  const togglePlay = async () => {
-    const audio = audioRef.current;
-    if (!audio) {
-      return;
-    }
+  const handleFormSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const data = new FormData(form);
 
-    if (audio.paused) {
-      try {
-        await audio.play();
-        setIsPlaying(true);
-      } catch {
-        setIsPlaying(false);
-      }
-    } else {
-      audio.pause();
-      setIsPlaying(false);
-    }
+    const name = String(data.get("name") ?? "").trim();
+    const email = String(data.get("email") ?? "").trim();
+    const message = String(data.get("message") ?? "").trim();
+
+    const subject = `refugio murar inquiry${name ? ` from ${name}` : ""}`;
+    const body = [
+      `Name: ${name || "-"}`,
+      `Email: ${email || "-"}`,
+      "",
+      message || "-",
+    ].join("\n");
+
+    const mailto = `mailto:hello@refugiomurar.es?subject=${encodeURIComponent(
+      subject,
+    )}&body=${encodeURIComponent(body)}`;
+
+    window.location.href = mailto;
   };
 
   const toggleMute = () => {
@@ -88,62 +116,130 @@ export default function Home() {
     setIsMuted(audio.muted);
   };
 
-  const toggleLoop = () => {
+  useEffect(() => {
     const audio = audioRef.current;
     if (!audio) {
       return;
     }
-    audio.loop = !audio.loop;
-    setIsLooping(audio.loop);
+
+    audio.muted = isMuted;
+  }, [isMuted]);
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) {
+      return;
+    }
+
+    const handleTimeUpdate = () => {
+      setCurrentTime(audio.currentTime);
+    };
+
+    const handleLoaded = () => {
+      setCurrentTime(0);
+    };
+
+    const handleEnded = async () => {
+      setCurrentTrack((prev) => (prev + 1) % audioSources.length);
+    };
+
+    audio.addEventListener("loadeddata", handleLoaded);
+    audio.addEventListener("timeupdate", handleTimeUpdate);
+    audio.addEventListener("ended", handleEnded);
+
+    return () => {
+      audio.removeEventListener("loadeddata", handleLoaded);
+      audio.removeEventListener("timeupdate", handleTimeUpdate);
+      audio.removeEventListener("ended", handleEnded);
+    };
+  }, []);
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) {
+      return;
+    }
+
+    audio.load();
+    const playAudio = async () => {
+      try {
+        await audio.play();
+      } catch {
+        // Autoplay can be blocked; user can unmute to hear once allowed.
+      }
+    };
+    void playAudio();
+  }, [currentTrack]);
+
+  const formatTime = (value: number) => {
+    const totalSeconds = Math.floor(value);
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    const padded = (time: number) => String(time).padStart(2, "0");
+    return `${padded(hours)}:${padded(minutes)}:${padded(seconds)}`;
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#d2d2d2] font-sans text-[#d97831]">
-      <main className="relative flex min-h-screen w-full items-center justify-center overflow-hidden px-4 py-6 text-center">
-        <audio ref={audioRef} src={audioSrc} loop={isLooping} muted={isMuted} />
-        <div className="absolute top-5 z-20 flex w-full items-center justify-center gap-4 px-4 text-[#d97831]">
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              aria-label={isPlaying ? "Pause" : "Play"}
-              onClick={togglePlay}
-              className="flex h-10 w-10 items-center justify-center rounded-full border border-[#d97831] text-[#d97831] transition-colors hover:bg-[#d97831]/10"
-            >
-              {isPlaying ? (
-                <svg
-                  viewBox="0 0 24 24"
-                  className="h-4 w-4"
-                  aria-hidden="true"
-                >
-                  <rect x="6" y="5" width="4" height="14" fill="currentColor" />
-                  <rect
-                    x="14"
-                    y="5"
-                    width="4"
-                    height="14"
-                    fill="currentColor"
-                  />
-                </svg>
-              ) : (
-                <svg
-                  viewBox="0 0 24 24"
-                  className="h-4 w-4"
-                  aria-hidden="true"
-                >
-                  <polygon points="6,4 20,12 6,20" fill="currentColor" />
-                </svg>
-              )}
-            </button>
+    <div className="fixed inset-0 overflow-hidden bg-[#d2d2d2] font-sans text-[#b026ff]">
+      <audio
+        ref={audioRef}
+        src={audioSources[currentTrack]}
+        muted={isMuted}
+        preload="auto"
+        loop
+      />
+
+      <div className="pointer-events-none fixed inset-0 z-10 flex items-center justify-center">
+        <img
+          src={logoSrc}
+          alt="refugio murar"
+          width={720}
+          height={720}
+          loading="eager"
+          decoding="async"
+          fetchPriority="high"
+          className="h-auto w-[720px] sm:w-[1120px] lg:w-[1640px] animate-spin-slow"
+        />
+      </div>
+
+      <div
+        className="z-20"
+        style={{
+          position: "fixed",
+          top: "-100px",
+          left: "-100px",
+          right: "-100px",
+          bottom: "-100px",
+        }}
+      >
+        <Canvas
+          camera={{ position: [0, 0, 13], fov: 50 }}
+          dpr={[1, 1.25]}
+          gl={{ antialias: false, powerPreference: "high-performance" }}
+        >
+          <ambientLight intensity={1.2} />
+          <directionalLight position={[4, 6, 4]} intensity={1.7} />
+          <directionalLight position={[-4, -2, 6]} intensity={0.9} />
+          <Suspense fallback={null}>
+            <CactusModel scale={32} />
+          </Suspense>
+        </Canvas>
+      </div>
+
+      <div className="fixed inset-0 z-30 grid grid-rows-[auto,1fr]">
+        <div className="row-start-1 px-4 sm:px-5 pt-[calc(env(safe-area-inset-top)+1rem)]">
+          <div className="flex items-start justify-between gap-3 text-[#b026ff]">
             <button
               type="button"
               aria-label={isMuted ? "Unmute" : "Mute"}
               onClick={toggleMute}
-              className="flex h-10 w-10 items-center justify-center rounded-full border border-[#d97831] text-[#d97831] transition-colors hover:bg-[#d97831]/10"
+              className="shrink-0 relative z-30 flex h-10 w-10 items-center justify-center rounded-full border border-[#b026ff] text-[#b026ff] transition-colors hover:bg-[#b026ff]/10 cursor-pointer"
             >
               {isMuted ? (
                 <svg
                   viewBox="0 0 24 24"
-                  className="h-4 w-4"
+                  className="h-4 w-4 pointer-events-none"
                   aria-hidden="true"
                 >
                   <polygon
@@ -172,7 +268,7 @@ export default function Home() {
               ) : (
                 <svg
                   viewBox="0 0 24 24"
-                  className="h-4 w-4"
+                  className="h-4 w-4 pointer-events-none"
                   aria-hidden="true"
                 >
                   <polygon
@@ -189,82 +285,72 @@ export default function Home() {
                 </svg>
               )}
             </button>
-            <button
-              type="button"
-              aria-label={isLooping ? "Disable loop" : "Enable loop"}
-              onClick={toggleLoop}
-              className="flex h-10 w-10 items-center justify-center rounded-full border border-[#d97831] text-[#d97831] transition-colors hover:bg-[#d97831]/10"
-            >
-              <svg
-                viewBox="0 0 24 24"
-                className="h-4 w-4"
-                aria-hidden="true"
-              >
-                <path
-                  d="M7 7h8a3 3 0 0 1 0 6h-2"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                />
-                <polyline
-                  points="11,10 13,13 10,13"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-                <path
-                  d="M17 17H9a3 3 0 0 1 0-6h2"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                />
-                <polyline
-                  points="13,14 11,11 14,11"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </button>
-          </div>
-          <span className="text-sm tracking-wide text-[#d97831]/80">
-            {fileName}
-          </span>
-        </div>
-        <div className="relative flex h-[92vh] w-full items-center justify-center">
-          <div className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center">
-            <Image
-              src={logoSrc}
-              alt="Refugio Murar"
-              width={720}
-              height={720}
-              priority
-              className="h-auto w-[720px] sm:w-[1120px] lg:w-[1640px] animate-spin-slow"
-            />
-          </div>
-          <Canvas camera={{ position: [0, 0, 7], fov: 30 }} className="relative z-10">
-            <ambientLight intensity={0.6} />
-            <directionalLight position={[4, 6, 4]} intensity={0.9} />
-            <Suspense fallback={null}>
-              <CactusModel offsetX={0} offsetY={-2} scale={4.8} />
-            </Suspense>
-          </Canvas>
-          <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center">
-            <span
-              className="text-3xl font-normal text-[#d97831] sm:text-4xl lg:text-5xl"
-              style={{ fontFamily: "Helvetica, Arial, sans-serif" }}
-            >
-              Refugio Murar
+
+            <span className="min-w-0 flex-1 mx-auto max-w-64 text-center text-xs leading-snug tracking-[0.15em] text-[#b026ff]/80 sm:max-w-80 sm:text-sm">
+              {listeningLabel}
+            </span>
+
+            <span className="shrink-0 rounded-full border border-[#b026ff] px-3 py-1 text-xs tracking-[0.2em] text-[#b026ff]/80 sm:text-sm">
+              {formatTime(currentTime)}
             </span>
           </div>
         </div>
-      </main>
+
+        <div className="row-start-2 overflow-y-auto pb-[calc(env(safe-area-inset-bottom)+2rem)]">
+          <div className="flex min-h-full items-center justify-center">
+            <div className="flex w-full flex-col items-center justify-center gap-6 px-6 py-10 text-[#b026ff] text-center">
+              <p
+                className="max-w-2xl text-center text-lg font-normal sm:text-xl lg:text-2xl"
+                style={{ fontFamily: "Helvetica, Arial, sans-serif" }}
+              >
+                refugio murar is currently under construction, in every way
+                imaginable. If you would like to inquire about a visit, drop us
+                a message.
+              </p>
+              <form
+                className="mx-auto flex w-full max-w-2xl flex-col items-center gap-4 sm:px-0"
+                onSubmit={handleFormSubmit}
+              >
+                <div className="flex w-full flex-col gap-4 sm:flex-row">
+                  <label className="flex w-full flex-col items-center gap-2 text-center text-sm uppercase tracking-wide">
+                    name:
+                    <input
+                      type="text"
+                      name="name"
+                      className="w-full rounded-full border border-[#b026ff] bg-transparent px-4 py-3 text-base text-[#b026ff] placeholder:text-[#b026ff] text-center"
+                      placeholder="your name"
+                    />
+                  </label>
+                  <label className="flex w-full flex-col items-center gap-2 text-center text-sm uppercase tracking-wide">
+                    e-mail address:
+                    <input
+                      type="email"
+                      name="email"
+                      className="w-full rounded-full border border-[#b026ff] bg-transparent px-4 py-3 text-base text-[#b026ff] placeholder:text-[#b026ff] text-center"
+                      placeholder="your@email.address"
+                    />
+                  </label>
+                </div>
+                <label className="flex w-full flex-col items-center gap-2 text-center text-sm uppercase tracking-wide">
+                  message:
+                  <textarea
+                    name="message"
+                    rows={5}
+                    className="w-full min-h-[140px] rounded-3xl border border-[#b026ff] bg-transparent px-4 py-3 text-base text-[#b026ff] placeholder:text-[#b026ff] text-center"
+                    placeholder="your message"
+                  />
+                </label>
+                <button
+                  type="submit"
+                  className="self-center rounded-full border border-[#b026ff] px-8 py-2 text-sm uppercase tracking-[0.2em] text-[#b026ff] transition-colors hover:bg-[#b026ff]/10"
+                >
+                  send
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

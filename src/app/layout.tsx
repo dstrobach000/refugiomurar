@@ -1,20 +1,15 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
 export const metadata: Metadata = {
-  title: "Refugio Murar",
-  description: "Refugio Murar",
+  title: "refugio murar",
+  description: "refugio murar",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({
@@ -24,9 +19,20 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+      <head>
+        <link
+          rel="preload"
+          as="image"
+          href="/Refugio_Murar/Logo/murar_logo_hneda.png"
+        />
+        <link
+          rel="preload"
+          as="fetch"
+          href="/Refugio_Murar/3D/Cactus/AnotherCactus.glb"
+          crossOrigin="anonymous"
+        />
+      </head>
+      <body className="antialiased">
         {children}
       </body>
     </html>
