@@ -2,6 +2,7 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "refugiomurar",
   "compatibility_date": "2026-02-09",
+  "main": "_worker.js",
   "assets": {
     "directory": "out"
   }
