@@ -4,7 +4,13 @@
 
 import { Canvas, useFrame } from "@react-three/fiber";
 import { useGLTF } from "@react-three/drei";
-import { Suspense, useMemo, useRef, useState, useEffect } from "react";
+import {
+  Suspense,
+  useMemo,
+  useRef,
+  useState,
+  useEffect,
+} from "react";
 import { Box3, Vector3, type Group } from "three";
 const cactusGlb = "/Refugio_Murar/3D/Cactus/AnotherCactus.glb";
 const logoSrc = "/Refugio_Murar/Logo/murar_logo_hneda.png";
@@ -181,7 +187,7 @@ export default function Home() {
   };
 
   return (
-    <div className="fixed inset-0 overflow-hidden bg-[#d2d2d2] font-sans text-[#b026ff]">
+    <>
       <audio
         ref={audioRef}
         src={audioSources[currentTrack]}
@@ -190,6 +196,20 @@ export default function Home() {
         loop
       />
 
+      {/* Purple strips behind iOS Safari bars — height is 0 on desktop */}
+      <div
+        className="pointer-events-none fixed top-0 left-0 right-0 z-[100] bg-[#b026ff]"
+        style={{ height: "env(safe-area-inset-top, 0px)" }}
+      />
+      <div
+        className="pointer-events-none fixed bottom-0 left-0 right-0 z-[100] bg-[#b026ff]"
+        style={{ height: "env(safe-area-inset-bottom, 0px)" }}
+      />
+
+      {/* Gray background */}
+      <div className="pointer-events-none fixed inset-0 z-[5] bg-[#d2d2d2]" />
+
+      {/* Spinning logo */}
       <div className="pointer-events-none fixed inset-0 z-10 flex items-center justify-center">
         <img
           src={logoSrc}
@@ -203,32 +223,24 @@ export default function Home() {
         />
       </div>
 
-      <div
-        className="z-20"
-        style={{
-          position: "fixed",
-          top: "-100px",
-          left: "-100px",
-          right: "-100px",
-          bottom: "-100px",
-        }}
-      >
+      {/* 3D cactus — transparent so logo shows through */}
+      <div className="pointer-events-none fixed inset-0 z-20">
         <Canvas
           camera={{ position: [0, 0, 13], fov: 50 }}
           dpr={[1, 1.25]}
-          gl={{ antialias: false, powerPreference: "high-performance" }}
+          gl={{ alpha: true, antialias: false, powerPreference: "high-performance" }}
         >
           <ambientLight intensity={1.2} />
           <directionalLight position={[4, 6, 4]} intensity={1.7} />
           <directionalLight position={[-4, -2, 6]} intensity={0.9} />
           <Suspense fallback={null}>
-            <CactusModel scale={32} />
+            <CactusModel scale={16} />
           </Suspense>
         </Canvas>
       </div>
 
-      <div className="fixed inset-0 z-30 grid grid-rows-[auto,1fr]">
-        <div className="row-start-1 px-4 sm:px-5 pt-[calc(env(safe-area-inset-top)+1rem)]">
+      <div className="fixed inset-0 z-50 grid grid-rows-[auto,1fr] overflow-y-auto font-sans text-[#b026ff]">
+        <div className="row-start-1 px-4 sm:px-5 pt-[calc(env(safe-area-inset-top)+0.75rem)] pb-3 relative z-50">
           <div className="flex items-start justify-between gap-3 text-[#b026ff]">
             <button
               type="button"
@@ -296,61 +308,59 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="row-start-2 overflow-y-auto pb-[calc(env(safe-area-inset-bottom)+2rem)]">
-          <div className="flex min-h-full items-center justify-center">
-            <div className="flex w-full flex-col items-center justify-center gap-6 px-6 py-10 text-[#b026ff] text-center">
-              <p
-                className="max-w-2xl text-center text-lg font-normal sm:text-xl lg:text-2xl"
-                style={{ fontFamily: "Helvetica, Arial, sans-serif" }}
-              >
-                refugio murar is currently under construction, in every way
-                imaginable. If you would like to inquire about a visit, drop us
-                a message.
-              </p>
-              <form
-                className="mx-auto flex w-full max-w-2xl flex-col items-center gap-4 sm:px-0"
-                onSubmit={handleFormSubmit}
-              >
-                <div className="flex w-full flex-col gap-4 sm:flex-row">
-                  <label className="flex w-full flex-col items-center gap-2 text-center text-sm uppercase tracking-wide">
-                    name:
-                    <input
-                      type="text"
-                      name="name"
-                      className="w-full rounded-full border border-[#b026ff] bg-transparent px-4 py-3 text-base text-[#b026ff] placeholder:text-[#b026ff] text-center"
-                      placeholder="your name"
-                    />
-                  </label>
-                  <label className="flex w-full flex-col items-center gap-2 text-center text-sm uppercase tracking-wide">
-                    e-mail address:
-                    <input
-                      type="email"
-                      name="email"
-                      className="w-full rounded-full border border-[#b026ff] bg-transparent px-4 py-3 text-base text-[#b026ff] placeholder:text-[#b026ff] text-center"
-                      placeholder="your@email.address"
-                    />
-                  </label>
-                </div>
-                <label className="flex w-full flex-col items-center gap-2 text-center text-sm uppercase tracking-wide">
-                  message:
-                  <textarea
-                    name="message"
-                    rows={5}
-                    className="w-full min-h-[140px] rounded-3xl border border-[#b026ff] bg-transparent px-4 py-3 text-base text-[#b026ff] placeholder:text-[#b026ff] text-center"
-                    placeholder="your message"
+        <div className="row-start-2 relative z-50 flex items-center justify-center px-5 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]">
+          <div className="flex w-full max-w-[44rem] flex-col items-center justify-center gap-3 sm:gap-4 text-[#b026ff] text-center">
+            <p
+              className="max-w-2xl text-center text-base font-normal sm:text-lg lg:text-xl"
+              style={{ fontFamily: "Helvetica, Arial, sans-serif" }}
+            >
+              refugio murar is currently under construction, in every way
+              imaginable. If you would like to inquire about a visit, drop us a
+              message.
+            </p>
+            <form
+              className="mx-auto flex w-full max-w-2xl flex-col items-center gap-3 sm:px-0"
+              onSubmit={handleFormSubmit}
+            >
+              <div className="flex w-full flex-col gap-3 sm:flex-row">
+                <label className="flex w-full flex-col items-center gap-1.5 text-center text-sm uppercase tracking-wide">
+                  name:
+                  <input
+                    type="text"
+                    name="name"
+                    className="w-full rounded-full border border-[#b026ff] bg-transparent px-4 py-2 text-base text-[#b026ff] placeholder:text-[#b026ff] text-center"
+                    placeholder="your name"
                   />
                 </label>
-                <button
-                  type="submit"
-                  className="self-center rounded-full border border-[#b026ff] px-8 py-2 text-sm uppercase tracking-[0.2em] text-[#b026ff] transition-colors hover:bg-[#b026ff]/10"
-                >
-                  send
-                </button>
-              </form>
-            </div>
+                <label className="flex w-full flex-col items-center gap-1.5 text-center text-sm uppercase tracking-wide">
+                  e-mail address:
+                  <input
+                    type="email"
+                    name="email"
+                    className="w-full rounded-full border border-[#b026ff] bg-transparent px-4 py-2 text-base text-[#b026ff] placeholder:text-[#b026ff] text-center"
+                    placeholder="your@email.address"
+                  />
+                </label>
+              </div>
+              <label className="flex w-full flex-col items-center gap-1.5 text-center text-sm uppercase tracking-wide">
+                message:
+                <textarea
+                  name="message"
+                  rows={4}
+                  className="w-full min-h-[110px] rounded-3xl border border-[#b026ff] bg-transparent px-4 py-2 text-base text-[#b026ff] placeholder:text-[#b026ff] text-center"
+                  placeholder="your message"
+                />
+              </label>
+              <button
+                type="submit"
+                className="self-center rounded-full border border-[#b026ff] px-8 py-2 text-sm uppercase tracking-[0.2em] text-[#b026ff] transition-colors hover:bg-[#b026ff]/10"
+              >
+                send
+              </button>
+            </form>
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }
