@@ -10,6 +10,8 @@ import { Box3, Vector3, type Group } from "three";
 const cactusGlb = "/Refugio_Murar/3D/Cactus/AnotherCactus.glb";
 const logoSrc = "/Refugio_Murar/Logo/murar_logo_hneda.png";
 const audioSrc = "/Refugio_Murar/Sound/260130_133313_LABOR.mp3";
+const contactApiUrl =
+  "https://refugiomurar.0david0strobach0.workers.dev/api/contact";
 
 useGLTF.preload(cactusGlb);
 
@@ -40,6 +42,21 @@ const formatListeningLabel = (fileName: string) => {
   return `You're listening to ${title} recorded on ${formatDatePart(
     datePart ?? "",
   )} at ${formatTimePart(timePart ?? "")}`;
+};
+
+const formatMissingFields = (fields: string[]) => {
+  if (fields.length === 0) {
+    return "";
+  }
+  if (fields.length === 1) {
+    return fields[0];
+  }
+  if (fields.length === 2) {
+    return `${fields[0]} and ${fields[1]}`;
+  }
+  const head = fields.slice(0, -1).join(", ");
+  const tail = fields[fields.length - 1];
+  return `${head}, and ${tail}`;
 };
 
 function CactusModel({ scale }: { scale: number }) {
@@ -91,9 +108,22 @@ export default function Home() {
     const name = String(data.get("name") ?? "").trim();
     const email = String(data.get("email") ?? "").trim();
     const message = String(data.get("message") ?? "").trim();
-    if (!name || !email || !message) {
+    const missingFields: string[] = [];
+    if (!name) {
+      missingFields.push("name");
+    }
+    if (!email) {
+      missingFields.push("e-mail address");
+    }
+    if (!message) {
+      missingFields.push("message");
+    }
+
+    if (missingFields.length > 0) {
       setSubmitStatus("error");
-      setSubmitMessage("Please fill in name, email, and message.");
+      setSubmitMessage(
+        `Please fill out ${formatMissingFields(missingFields)}.`,
+      );
       return;
     }
 
@@ -102,7 +132,7 @@ export default function Home() {
     setSubmitMessage("");
 
     try {
-      const response = await fetch("/api/contact", {
+      const response = await fetch(contactApiUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

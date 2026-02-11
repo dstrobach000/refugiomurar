@@ -10,6 +10,7 @@ type Env = {
   CONTACT_TO: string;
   CONTACT_FROM: string;
   ALLOWED_ORIGIN?: string;
+  ALLOWED_ORIGINS?: string;
 };
 
 type ContactPayload = {
@@ -30,13 +31,32 @@ const json = (body: unknown, status = 200, origin = "*") =>
     },
   });
 
+const parseAllowedOrigins = (env: Env) => {
+  const list = env.ALLOWED_ORIGINS?.split(",")
+    .map((value) => value.trim())
+    .filter(Boolean);
+  if (list && list.length > 0) {
+    return list;
+  }
+  if (env.ALLOWED_ORIGIN?.trim()) {
+    return [env.ALLOWED_ORIGIN.trim()];
+  }
+  return [];
+};
+
 const withCorsOrigin = (request: Request, env: Env) => {
   const requestOrigin = request.headers.get("origin");
-  const allowedOrigin = env.ALLOWED_ORIGIN?.trim();
-  if (!allowedOrigin) {
-    return requestOrigin || "*";
+  if (!requestOrigin) {
+    return { origin: "*", allowed: true };
   }
-  return requestOrigin === allowedOrigin ? allowedOrigin : "null";
+  const allowedOrigins = parseAllowedOrigins(env);
+  if (allowedOrigins.length === 0) {
+    return { origin: requestOrigin, allowed: true };
+  }
+  if (allowedOrigins.includes(requestOrigin)) {
+    return { origin: requestOrigin, allowed: true };
+  }
+  return { origin: "null", allowed: false };
 };
 
 const parsePayload = async (request: Request): Promise<ContactPayload | null> => {
@@ -65,11 +85,16 @@ const buildRawEmail = (payload: ContactPayload, env: Env) => {
   const replyTo = escapeHeader(payload.email);
   const messageId = `<${crypto.randomUUID()}@refugiomurar.es>`;
   const body = [
-    `Name: ${payload.name}`,
-    `Email: ${payload.email}`,
-    `Submitted: ${submittedAt}`,
+    "NAME:",
+    payload.name,
     "",
+    "E-MAIL ADDRESS:",
+    payload.email,
+    "",
+    "MESSAGE:",
     payload.message,
+    "",
+    `SUBMITTED: ${submittedAt}`,
   ].join("\r\n");
 
   return {
@@ -94,31 +119,35 @@ const buildRawEmail = (payload: ContactPayload, env: Env) => {
 const worker = {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
-    const corsOrigin = withCorsOrigin(request, env);
+    const cors = withCorsOrigin(request, env);
 
     if (url.pathname === "/api/contact") {
       if (request.method === "OPTIONS") {
-        return json({ ok: true }, 204, corsOrigin);
+        return json({ ok: true }, 204, cors.origin);
       }
 
       if (request.method !== "POST") {
-        return json({ error: "Method not allowed." }, 405, corsOrigin);
+        return json({ error: "Method not allowed." }, 405, cors.origin);
+      }
+
+      if (!cors.allowed) {
+        return json({ error: "Origin not allowed." }, 403, cors.origin);
       }
 
       const payload = await parsePayload(request);
       if (!payload) {
-        return json({ error: "Invalid request payload." }, 400, corsOrigin);
+        return json({ error: "Invalid request payload." }, 400, cors.origin);
       }
 
       if (payload.message.length > 5000 || payload.name.length > 200 || payload.email.length > 320) {
-        return json({ error: "Message is too long." }, 400, corsOrigin);
+        return json({ error: "Message is too long." }, 400, cors.origin);
       }
 
       const email = buildRawEmail(payload, env);
       const message = new EmailMessage(email.from, email.to, email.raw);
 
       await env.CONTACT_EMAIL.send(message);
-      return json({ ok: true }, 200, corsOrigin);
+      return json({ ok: true }, 200, cors.origin);
     }
 
     return env.ASSETS.fetch(request);
