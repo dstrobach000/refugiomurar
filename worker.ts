@@ -19,16 +19,26 @@ type ContactPayload = {
   message: string;
 };
 
+const corsHeaders = (origin: string) => ({
+  "access-control-allow-origin": origin,
+  "access-control-allow-methods": "POST, OPTIONS",
+  "access-control-allow-headers": "content-type",
+  "cache-control": "no-store",
+});
+
 const json = (body: unknown, status = 200, origin = "*") =>
   new Response(JSON.stringify(body), {
     status,
     headers: {
       "content-type": "application/json; charset=utf-8",
-      "access-control-allow-origin": origin,
-      "access-control-allow-methods": "POST, OPTIONS",
-      "access-control-allow-headers": "content-type",
-      "cache-control": "no-store",
+      ...corsHeaders(origin),
     },
+  });
+
+const empty = (status = 204, origin = "*") =>
+  new Response(null, {
+    status,
+    headers: corsHeaders(origin),
   });
 
 const parseAllowedOrigins = (env: Env) => {
@@ -123,7 +133,7 @@ const worker = {
 
     if (url.pathname === "/api/contact") {
       if (request.method === "OPTIONS") {
-        return json({ ok: true }, 204, cors.origin);
+        return empty(204, cors.origin);
       }
 
       if (request.method !== "POST") {
