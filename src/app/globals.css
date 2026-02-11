@@ -2,10 +2,8 @@
 
 :root {
   --background: #d2d2d2;
-  --foreground: #d97831;
+  --foreground: #b026ff;
   --font-sans: "Helvetica Neue", Helvetica, Arial, sans-serif;
-  --font-mono: "SFMono-Regular", Menlo, Monaco, Consolas, "Liberation Mono",
-    monospace;
   color-scheme: light;
 }
 
@@ -13,14 +11,13 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-sans);
-  --font-mono: var(--font-mono);
 }
 
 html,
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
   margin: 0;
   padding: 0;
 }

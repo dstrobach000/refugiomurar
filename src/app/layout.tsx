@@ -23,22 +23,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <head>
-        <link
-          rel="preload"
-          as="image"
-          href="/Refugio_Murar/Logo/murar_logo_hneda.png"
-        />
-        <link
-          rel="preload"
-          as="fetch"
-          href="/Refugio_Murar/3D/Cactus/AnotherCactus.glb"
-          crossOrigin="anonymous"
-        />
-      </head>
-      <body className="antialiased">
-        {children}
-      </body>
+      <body className="antialiased">{children}</body>
     </html>
   );
 }

@@ -2,6 +2,17 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "refugiomurar",
   "compatibility_date": "2026-02-09",
+  "main": "worker.ts",
+  "send_email": [
+    {
+      "name": "CONTACT_EMAIL",
+      "destination_address": "hello@refugiomurar.es"
+    }
+  ],
+  "vars": {
+    "CONTACT_TO": "hello@refugiomurar.es",
+    "CONTACT_FROM": "hello@refugiomurar.es"
+  },
   "assets": {
     "directory": "out"
   }

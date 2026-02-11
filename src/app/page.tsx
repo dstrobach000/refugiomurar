@@ -4,17 +4,12 @@
 
 import { Canvas, useFrame } from "@react-three/fiber";
 import { useGLTF } from "@react-three/drei";
-import {
-  Suspense,
-  useMemo,
-  useRef,
-  useState,
-  useEffect,
-} from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { Box3, Vector3, type Group } from "three";
+
 const cactusGlb = "/Refugio_Murar/3D/Cactus/AnotherCactus.glb";
 const logoSrc = "/Refugio_Murar/Logo/murar_logo_hneda.png";
-const audioSources = ["/Refugio_Murar/Sound/260130_133313_LABOR.mp3"];
+const audioSrc = "/Refugio_Murar/Sound/260130_133313_LABOR.mp3";
 
 useGLTF.preload(cactusGlb);
 
@@ -78,18 +73,17 @@ function CactusModel({ scale }: { scale: number }) {
 
 export default function Home() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const [currentTrack, setCurrentTrack] = useState(() =>
-    audioSources.length > 1
-      ? Math.floor(Math.random() * audioSources.length)
-      : 0,
-  );
   const [isMuted, setIsMuted] = useState(true);
   const [currentTime, setCurrentTime] = useState(0);
-  const currentFileName =
-    audioSources[currentTrack]?.split("/").pop() ?? "audio";
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitStatus, setSubmitStatus] = useState<"idle" | "success" | "error">(
+    "idle",
+  );
+  const [submitMessage, setSubmitMessage] = useState("");
+  const currentFileName = audioSrc.split("/").pop() ?? "audio";
   const listeningLabel = formatListeningLabel(currentFileName);
 
-  const handleFormSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleFormSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const form = event.currentTarget;
     const data = new FormData(form);
@@ -97,20 +91,41 @@ export default function Home() {
     const name = String(data.get("name") ?? "").trim();
     const email = String(data.get("email") ?? "").trim();
     const message = String(data.get("message") ?? "").trim();
+    if (!name || !email || !message) {
+      setSubmitStatus("error");
+      setSubmitMessage("Please fill in name, email, and message.");
+      return;
+    }
 
-    const subject = `refugio murar inquiry${name ? ` from ${name}` : ""}`;
-    const body = [
-      `Name: ${name || "-"}`,
-      `Email: ${email || "-"}`,
-      "",
-      message || "-",
-    ].join("\n");
+    setIsSubmitting(true);
+    setSubmitStatus("idle");
+    setSubmitMessage("");
 
-    const mailto = `mailto:hello@refugiomurar.es?subject=${encodeURIComponent(
-      subject,
-    )}&body=${encodeURIComponent(body)}`;
+    try {
+      const response = await fetch("/api/contact", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ name, email, message }),
+      });
 
-    window.location.href = mailto;
+      const result = (await response.json()) as { error?: string };
+      if (!response.ok) {
+        setSubmitStatus("error");
+        setSubmitMessage(result.error ?? "Could not send your message.");
+        return;
+      }
+
+      setSubmitStatus("success");
+      setSubmitMessage("Message sent. We will get back to you soon.");
+      form.reset();
+    } catch {
+      setSubmitStatus("error");
+      setSubmitMessage("Network error. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const toggleMute = () => {
@@ -118,6 +133,13 @@ export default function Home() {
     if (!audio) {
       return;
     }
+
+    if (audio.paused) {
+      void audio.play().catch(() => {
+        // If blocked again, user can interact with the page and retry.
+      });
+    }
+
     audio.muted = !audio.muted;
     setIsMuted(audio.muted);
   };
@@ -141,22 +163,14 @@ export default function Home() {
       setCurrentTime(audio.currentTime);
     };
 
-    const handleLoaded = () => {
-      setCurrentTime(0);
-    };
-
-    const handleEnded = async () => {
-      setCurrentTrack((prev) => (prev + 1) % audioSources.length);
-    };
+    const handleLoaded = () => setCurrentTime(0);
 
     audio.addEventListener("loadeddata", handleLoaded);
     audio.addEventListener("timeupdate", handleTimeUpdate);
-    audio.addEventListener("ended", handleEnded);
 
     return () => {
       audio.removeEventListener("loadeddata", handleLoaded);
       audio.removeEventListener("timeupdate", handleTimeUpdate);
-      audio.removeEventListener("ended", handleEnded);
     };
   }, []);
 
@@ -175,7 +189,7 @@ export default function Home() {
       }
     };
     void playAudio();
-  }, [currentTrack]);
+  }, []);
 
   const formatTime = (value: number) => {
     const totalSeconds = Math.floor(value);
@@ -190,20 +204,10 @@ export default function Home() {
     <>
       <audio
         ref={audioRef}
-        src={audioSources[currentTrack]}
+        src={audioSrc}
         muted={isMuted}
         preload="auto"
         loop
-      />
-
-      {/* Purple strips behind iOS Safari bars — height is 0 on desktop */}
-      <div
-        className="pointer-events-none fixed top-0 left-0 right-0 z-[100] bg-[#b026ff]"
-        style={{ height: "env(safe-area-inset-top, 0px)" }}
-      />
-      <div
-        className="pointer-events-none fixed bottom-0 left-0 right-0 z-[100] bg-[#b026ff]"
-        style={{ height: "env(safe-area-inset-bottom, 0px)" }}
       />
 
       {/* Gray background */}
@@ -328,6 +332,7 @@ export default function Home() {
                   <input
                     type="text"
                     name="name"
+                    required
                     className="w-full rounded-full border border-[#b026ff] bg-transparent px-4 py-2 text-base text-[#b026ff] placeholder:text-[#b026ff] text-center"
                     placeholder="your name"
                   />
@@ -337,6 +342,7 @@ export default function Home() {
                   <input
                     type="email"
                     name="email"
+                    required
                     className="w-full rounded-full border border-[#b026ff] bg-transparent px-4 py-2 text-base text-[#b026ff] placeholder:text-[#b026ff] text-center"
                     placeholder="your@email.address"
                   />
@@ -346,6 +352,7 @@ export default function Home() {
                 message:
                 <textarea
                   name="message"
+                  required
                   rows={4}
                   className="w-full min-h-[110px] rounded-3xl border border-[#b026ff] bg-transparent px-4 py-2 text-base text-[#b026ff] placeholder:text-[#b026ff] text-center"
                   placeholder="your message"
@@ -353,10 +360,22 @@ export default function Home() {
               </label>
               <button
                 type="submit"
+                disabled={isSubmitting}
                 className="self-center rounded-full border border-[#b026ff] px-8 py-2 text-sm uppercase tracking-[0.2em] text-[#b026ff] transition-colors hover:bg-[#b026ff]/10"
               >
-                send
+                {isSubmitting ? "sending..." : "send"}
               </button>
+              {submitMessage ? (
+                <p
+                  className={`text-sm ${
+                    submitStatus === "error"
+                      ? "text-[#ff6a9f]"
+                      : "text-[#b026ff]"
+                  }`}
+                >
+                  {submitMessage}
+                </p>
+              ) : null}
             </form>
           </div>
         </div>
