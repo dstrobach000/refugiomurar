@@ -18,8 +18,25 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans);
+  min-height: 100%;
   margin: 0;
   padding: 0;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+@supports (height: 100svh) {
+  html,
+  body {
+    min-height: 100svh;
+  }
+}
+
+@supports (height: 100lvh) {
+  html,
+  body {
+    min-height: 100lvh;
+  }
 }
 
 canvas {
