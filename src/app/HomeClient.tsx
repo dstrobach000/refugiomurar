@@ -272,10 +272,13 @@ export default function Home() {
             style={{
               ...canvasLayerStyle,
               transform: "translateY(-4svh)",
+              touchAction: "none",
+              overscrollBehavior: "none",
+              WebkitOverflowScrolling: "auto",
             }}
           >
             <Canvas
-              style={{ height: "100%", width: "100%" }}
+              style={{ height: "100%", width: "100%", touchAction: "none" }}
               camera={{ position: CAMERA_POSITION, fov: CAMERA_FOV }}
               dpr={[1, 1.25]}
               resize={{ scroll: false }}
