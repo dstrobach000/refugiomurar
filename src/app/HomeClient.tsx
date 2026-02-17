@@ -375,7 +375,7 @@ export default function Home() {
               )}
             </button>
 
-            <span className="min-w-0 flex-1 mx-auto max-w-64 text-center text-xs leading-snug tracking-[0.15em] text-[#b026ff]/80 sm:max-w-80 sm:text-lg">
+            <span className="min-w-0 flex-1 mx-auto max-w-[18rem] text-center text-xs leading-snug tracking-[0.15em] text-[#b026ff]/80 sm:max-w-[34rem] sm:text-lg lg:max-w-[42rem]">
               {listeningLabel}
             </span>
 
