@@ -315,7 +315,7 @@ export default function Home() {
       {/* UI layer (independent from scene layer). */}
       <div
         className="fixed inset-0 z-50 grid h-screen w-full grid-rows-[auto,1fr] overflow-hidden font-sans text-[#b026ff]"
-        style={{ height: "100lvh" }}
+        style={{ height: "100dvh" }}
       >
         <div className="row-start-1 px-4 sm:px-5 pt-[calc(env(safe-area-inset-top)+0.75rem)] pb-3 relative z-50">
           <div className="flex items-start justify-between gap-3 text-[#b026ff]">
@@ -323,12 +323,12 @@ export default function Home() {
               type="button"
               aria-label={isMuted ? "Unmute" : "Mute"}
               onClick={toggleMute}
-              className="shrink-0 relative z-30 flex h-10 w-10 items-center justify-center rounded-full border border-[#b026ff] text-[#b026ff] transition-colors hover:bg-[#b026ff]/10 cursor-pointer"
+              className="shrink-0 relative z-30 flex h-8 w-8 sm:h-12 sm:w-12 items-center justify-center rounded-full border border-[#b026ff] text-[#b026ff] transition-colors hover:bg-[#b026ff]/10 cursor-pointer"
             >
               {isMuted ? (
                 <svg
                   viewBox="0 0 24 24"
-                  className="h-4 w-4 pointer-events-none"
+                  className="h-4 w-4 sm:h-5 sm:w-5 pointer-events-none"
                   aria-hidden="true"
                 >
                   <polygon
@@ -357,7 +357,7 @@ export default function Home() {
               ) : (
                 <svg
                   viewBox="0 0 24 24"
-                  className="h-4 w-4 pointer-events-none"
+                  className="h-4 w-4 sm:h-5 sm:w-5 pointer-events-none"
                   aria-hidden="true"
                 >
                   <polygon
@@ -375,24 +375,24 @@ export default function Home() {
               )}
             </button>
 
-            <span className="min-w-0 flex-1 mx-auto max-w-64 text-center text-xs leading-snug tracking-[0.15em] text-[#b026ff]/80 sm:max-w-80 sm:text-sm">
+            <span className="min-w-0 flex-1 mx-auto max-w-64 text-center text-xs leading-snug tracking-[0.15em] text-[#b026ff]/80 sm:max-w-80 sm:text-lg">
               {listeningLabel}
             </span>
 
-            <span className="shrink-0 rounded-full border border-[#b026ff] px-3 py-1 text-xs tracking-[0.2em] text-[#b026ff]/80 sm:text-sm">
+            <span className="shrink-0 rounded-full border border-[#b026ff] px-3 py-1 text-xs tracking-[0.2em] text-[#b026ff]/80 sm:text-lg">
               {formatTime(currentTime)}
             </span>
           </div>
         </div>
 
         <div
-          className="row-start-2 relative z-50 min-h-0 overflow-y-auto overscroll-contain"
-          style={{ WebkitOverflowScrolling: "touch" }}
+          className="row-start-2 relative z-50 min-h-0 overflow-y-scroll overscroll-contain"
+          style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-y" }}
         >
-          <div className="flex items-start justify-center px-5 pt-0 pb-[calc(env(safe-area-inset-bottom)+2rem)]">
-          <div className="flex w-full max-w-[44rem] flex-col items-center justify-start gap-1.5 sm:gap-4 text-[#b026ff] text-center">
+          <div className="flex items-start justify-center px-5 pt-6 sm:pt-8 pb-[calc(env(safe-area-inset-bottom)+12rem)] sm:pb-[calc(env(safe-area-inset-bottom)+2rem)]">
+          <div className="flex w-full max-w-[44rem] flex-col items-center justify-start gap-4 sm:gap-5 text-[#b026ff] text-center">
             <p
-              className="max-w-2xl text-center text-base font-normal sm:text-lg lg:text-xl"
+              className="max-w-2xl text-center text-xl font-normal sm:text-3xl lg:text-4xl"
               style={{ fontFamily: "Helvetica, Arial, sans-serif" }}
             >
               refugio murar is currently under construction, in every way
@@ -400,51 +400,51 @@ export default function Home() {
               other questions, drop us a message.
             </p>
             <form
-              className="mx-auto flex w-full max-w-2xl flex-col items-center gap-3 sm:px-0"
+              className="mx-auto mt-8 sm:mt-6 flex w-full max-w-2xl flex-col items-center gap-3 sm:gap-5 sm:px-0"
               onSubmit={handleFormSubmit}
             >
               <div className="flex w-full flex-col gap-3 sm:flex-row">
-                <label className="flex w-full flex-col items-center gap-1.5 text-center text-sm uppercase tracking-wide">
+                <label className="flex w-full flex-col items-center gap-1.5 text-center text-base uppercase tracking-wide sm:text-xl">
                   name:
                   <input
                     type="text"
                     name="name"
                     required
-                    className="w-full rounded-full border border-[#b026ff] bg-transparent px-4 py-2 text-base text-[#b026ff] placeholder:text-[#b026ff] text-center"
+                    className="w-full rounded-full border border-[#b026ff] bg-transparent px-4 py-2 text-lg text-[#b026ff] placeholder:text-[#b026ff] text-center sm:text-2xl"
                     placeholder="your name"
                   />
                 </label>
-                <label className="flex w-full flex-col items-center gap-1.5 text-center text-sm uppercase tracking-wide">
+                <label className="flex w-full flex-col items-center gap-1.5 text-center text-base uppercase tracking-wide sm:text-xl">
                   e-mail address:
                   <input
                     type="email"
                     name="email"
                     required
-                    className="w-full rounded-full border border-[#b026ff] bg-transparent px-4 py-2 text-base text-[#b026ff] placeholder:text-[#b026ff] text-center"
+                    className="w-full rounded-full border border-[#b026ff] bg-transparent px-4 py-2 text-lg text-[#b026ff] placeholder:text-[#b026ff] text-center sm:text-2xl"
                     placeholder="your@email.address"
                   />
                 </label>
               </div>
-              <label className="flex w-full flex-col items-center gap-1.5 text-center text-sm uppercase tracking-wide">
+              <label className="flex w-full flex-col items-center gap-1.5 text-center text-base uppercase tracking-wide sm:text-xl">
                 message:
                 <textarea
                   name="message"
                   required
                   rows={4}
-                  className="w-full min-h-[90px] sm:min-h-[110px] rounded-3xl border border-[#b026ff] bg-transparent px-4 py-2 text-base text-[#b026ff] placeholder:text-[#b026ff] text-center"
+                  className="w-full min-h-[96px] sm:min-h-[140px] rounded-3xl border border-[#b026ff] bg-transparent px-4 py-2 text-lg text-[#b026ff] placeholder:text-[#b026ff] text-center sm:text-2xl"
                   placeholder="your message"
                 />
               </label>
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="self-center rounded-full border border-[#b026ff] px-8 py-2 text-sm uppercase tracking-[0.2em] text-[#b026ff] transition-colors hover:bg-[#b026ff]/10"
+                className="self-center rounded-full border border-[#b026ff] px-8 py-2 text-base uppercase tracking-[0.2em] text-[#b026ff] transition-colors hover:bg-[#b026ff]/10 sm:text-xl"
               >
                 {isSubmitting ? "sending..." : "send"}
               </button>
               {submitMessage ? (
                 <p
-                  className={`text-sm ${
+                  className={`text-base sm:text-xl ${
                     submitStatus === "error"
                       ? "text-[#ff6a9f]"
                       : "text-[#b026ff]"
