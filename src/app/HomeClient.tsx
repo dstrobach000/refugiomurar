@@ -375,7 +375,7 @@ export default function Home() {
               )}
             </button>
 
-            <span className="min-w-0 flex-1 mx-auto max-w-[18rem] text-center text-xs leading-snug tracking-[0.15em] text-[#b026ff]/80 sm:max-w-[34rem] sm:text-lg lg:max-w-[42rem]">
+            <span className="min-w-0 flex-1 mx-auto max-w-72 text-center text-xs leading-snug tracking-[0.15em] text-[#b026ff]/80 sm:max-w-136 sm:text-lg lg:max-w-2xl">
               {listeningLabel}
             </span>
 
@@ -390,13 +390,13 @@ export default function Home() {
           style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-y" }}
         >
           <div className="flex items-start justify-center px-5 pt-6 sm:pt-8 pb-[calc(env(safe-area-inset-bottom)+12rem)] sm:pb-[calc(env(safe-area-inset-bottom)+2rem)]">
-          <div className="flex w-full max-w-[44rem] flex-col items-center justify-start gap-4 sm:gap-5 text-[#b026ff] text-center">
+          <div className="flex w-full max-w-176 flex-col items-center justify-start gap-4 sm:gap-5 text-[#b026ff] text-center">
             <p
               className="max-w-2xl text-center text-xl font-normal sm:text-3xl lg:text-4xl"
               style={{ fontFamily: "Helvetica, Arial, sans-serif" }}
             >
               refugio murar is currently under construction, in every way
-              imaginable. if you'd like to inquire about a visit or have any
+              imaginable. if you&apos;d like to inquire about a visit or have any
               other questions, drop us a message.
             </p>
             <form
