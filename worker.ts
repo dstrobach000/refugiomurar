@@ -1,14 +1,10 @@
-import { EmailMessage } from "cloudflare:email";
-
 type Env = {
   ASSETS: {
     fetch: (request: Request) => Promise<Response>;
   };
-  CONTACT_EMAIL: {
-    send: (message: EmailMessage) => Promise<void>;
-  };
   CONTACT_TO: string;
   CONTACT_FROM: string;
+  RESEND_API_KEY?: string;
   ALLOWED_ORIGIN?: string;
   ALLOWED_ORIGINS?: string;
 };
@@ -84,17 +80,11 @@ const parsePayload = async (request: Request): Promise<ContactPayload | null> =>
   }
 };
 
-const escapeHeader = (value: string) => value.replace(/[\r\n]+/g, " ").trim();
+const resendEndpoint = "https://api.resend.com/emails";
 
-const buildRawEmail = (payload: ContactPayload, env: Env) => {
-  const now = new Date();
-  const submittedAt = now.toISOString();
-  const subject = escapeHeader(`Refugio Murar inquiry from ${payload.name}`);
-  const from = escapeHeader(env.CONTACT_FROM);
-  const to = escapeHeader(env.CONTACT_TO);
-  const replyTo = escapeHeader(payload.email);
-  const messageId = `<${crypto.randomUUID()}@refugiomurar.es>`;
-  const body = [
+const buildMessageText = (payload: ContactPayload) => {
+  const submittedAt = new Date().toISOString();
+  return [
     "NAME:",
     payload.name,
     "",
@@ -106,24 +96,35 @@ const buildRawEmail = (payload: ContactPayload, env: Env) => {
     "",
     `SUBMITTED: ${submittedAt}`,
   ].join("\r\n");
+};
 
-  return {
-    from,
-    to,
-    raw: [
-      `From: ${from}`,
-      `To: ${to}`,
-      `Reply-To: ${replyTo}`,
-      `Subject: ${subject}`,
-      `Date: ${now.toUTCString()}`,
-      `Message-ID: ${messageId}`,
-      "MIME-Version: 1.0",
-      "Content-Type: text/plain; charset=utf-8",
-      "Content-Transfer-Encoding: 8bit",
-      "",
-      body,
-    ].join("\r\n"),
-  };
+const sendViaResend = async (payload: ContactPayload, env: Env) => {
+  const apiKey = env.RESEND_API_KEY?.trim();
+  const from = env.CONTACT_FROM?.trim();
+  const to = env.CONTACT_TO?.trim();
+  if (!apiKey || !from || !to) {
+    throw new Error("Missing Resend configuration.");
+  }
+
+  const response = await fetch(resendEndpoint, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from,
+      to: [to],
+      reply_to: payload.email,
+      subject: `Refugio Murar inquiry from ${payload.name}`,
+      text: buildMessageText(payload),
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Resend error ${response.status}: ${errorText.slice(0, 500)}`);
+  }
 };
 
 const worker = {
@@ -153,10 +154,17 @@ const worker = {
         return json({ error: "Message is too long." }, 400, cors.origin);
       }
 
-      const email = buildRawEmail(payload, env);
-      const message = new EmailMessage(email.from, email.to, email.raw);
+      try {
+        await sendViaResend(payload, env);
+      } catch (error) {
+        console.error("Contact form send failed:", error);
+        return json(
+          { error: "Message could not be sent right now. Please try again." },
+          502,
+          cors.origin,
+        );
+      }
 
-      await env.CONTACT_EMAIL.send(message);
       return json({ ok: true }, 200, cors.origin);
     }
 

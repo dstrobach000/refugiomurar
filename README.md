@@ -2,20 +2,24 @@
 
 ## Contact Form Email Delivery on Cloudflare
 
-This project now uses a Cloudflare Worker endpoint at `POST /api/contact` and Cloudflare Email Workers (`send_email`) to deliver contact form messages.
+This project uses a Cloudflare Worker endpoint at `POST /api/contact` and sends email through Resend for better deliverability.
 
-### Cloudflare setup required
+### Resend setup required
 
-1. In Cloudflare dashboard, enable **Email Routing** for `refugiomurar.es`.
-2. Add and verify the sender mailbox used in `CONTACT_FROM`:
-   - Current default is `noreply@refugiomurar.es`.
-3. Confirm destination inbox:
-   - Current default is `hello@refugiomurar.es`.
-4. Optional but recommended: set allowed origin for CORS:
-   - `wrangler secret put ALLOWED_ORIGIN`
-   - Value should be your site URL (example: `https://refugiomurar.es`).
+1. Create a Resend account.
+2. Add and verify your sending domain (`refugiomurar.es`) in Resend.
+3. Create a Resend API key with send permissions.
 
-### Deploy
+### Cloudflare secrets required
+
+Set these in the project directory:
+
+1. `npx wrangler secret put RESEND_API_KEY`
+   - value: your Resend API key
+2. `npx wrangler secret put ALLOWED_ORIGINS`
+   - value example: `https://refugiomurar.es,https://www.refugiomurar.es,https://refugiomurar.pages.dev`
+
+### Deploy with Wrangler
 
 This project is configured for Wrangler deployment:
 
@@ -34,4 +38,4 @@ The Worker serves static files from `out` and handles `/api/contact`.
 ### Notes
 
 - `next.config.ts` uses `output: "export"` for static output.
-- Form delivery requires Email Routing to be active and sender address verified.
+- Form delivery requires a valid Resend API key and verified sending domain.
